@@ -1,0 +1,6 @@
+function SetUpRace()
+    Global.call("setupRace", {
+        "orcs",
+        3
+    })
+end

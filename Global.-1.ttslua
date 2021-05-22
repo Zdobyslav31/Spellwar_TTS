@@ -1,0 +1,305 @@
+--[[
+Spellwar
+Author: Jędrzej Kubala
+--]]
+
+--[[----------------------------------------------------------------------------
+Components guids
+--]]
+RACES_GUIDS = {
+    orcs = {
+        infantry="ade3d6",
+        cavalry="3ef149",
+        artillery="fe3b05",
+        banner="e3a944",
+        card="4e22c4"
+    },
+    elfs = {
+        infantry="e1c7c3",
+        cavalry="2f4cdf",
+        artillery="b036a7",
+        banner="ea16c2",
+        card="36e4fb"
+    },
+    humans = {
+        infantry="1e9f1e",
+        cavalry="410de6",
+        artillery="8680f6",
+        banner="064fe0",
+        card="68b1ba"
+    },
+    dwarfs = {
+        infantry="b30158",
+        cavalry="11ce92",
+        artillery="1c061f",
+        banner="f8a483",
+        card="bd83c2"
+    }
+}
+PLAYERS_SETUP = {
+    {
+        location_sign = {-1, 1, 1},
+        rotation_sign = 1,
+        buttons = {
+            orcs = "93526a",
+            elfs = "e608ed",
+            humans = "df531b",
+            dwarfs = "8123c9",
+            empty = "ff6c32"
+        },
+        help_card = "a6c903"
+    },
+    {
+        location_sign = {-1, 1, -1},
+        rotation_sign = 1,
+        buttons = {
+            orcs = "c5113c",
+            elfs = "6221ff",
+            humans = "f14a9b",
+            dwarfs = "791cc7"
+        },
+        help_card = "4592fc"
+    },
+    {
+        location_sign = {1, 1, -1},
+        rotation_sign = -1,
+        buttons = {
+            orcs = "0c613f",
+            elfs = "f62aba",
+            humans = "c94f07",
+            dwarfs = "ce9027"
+        },
+        help_card = "e0e230"
+    },
+    {
+        location_sign = {1, 1, 1},
+        rotation_sign = -1,
+        buttons = {
+            orcs = "d5ac96",
+            elfs = "e41781",
+            humans = "48478b",
+            dwarfs = "5b9b2a"
+        },
+        help_card = "4e8955"
+    },
+}
+RESOURCES = {
+    stone = "27c876",
+    obsidian = "e3505b",
+    herbs = "38bb8f",
+    wood = "26b492",
+    wheat = "2105c2",
+    mana = "4d6c3a"
+}
+SPELL_DECKS = {
+    wind = "a6cd8d",
+    fire = "89c94b",
+    water = "de2e84",
+    life = "54b680",
+    earth = "ace6a5",
+    arcane = "c9cd9c"
+}
+START_GAME_BUTTON = "feedfb"
+THREE_PLAYERS_COVER = "b04251"
+
+--[[----------------------------------------------------------------------------
+Global variables
+--]]
+SETUP_LOCATION = {17.40, 1.01, 8.55}
+SETUP_ROTATION = {0, 90, 0}
+THREE_PLAYERS_COVER_LOCATION = {-6.1, 1.8, -0.27}
+seated_players_number = 0
+seated_players = {}
+INITIAL_RESOURCES = {
+    wood = 3,
+    obsidian = 3,
+    herbs = 3
+}
+
+--[[----------------------------------------------------------------------------
+Utils functions
+--]]
+
+function table.contains(table, element)
+    -- checks if a key exists in a given table
+  for _, value in pairs(table) do
+    if value == element then
+      return true
+    end
+  end
+  return false
+end
+
+function destroyObjectIfExists(guid)
+    local component  = getObjectFromGUID(guid)
+    if component != nil then
+        destroyObject(component)
+    end
+end
+
+function placeComponent(component_guid, setup_rotation, setup_position, lock)
+    --[[
+     places component in a given position & rotation,
+     optionally locks its position
+    ]]
+    local component = getObjectFromGUID(component_guid)
+    component.setRotation(setup_rotation)
+    component.setPositionSmooth(setup_position)
+    if lock then
+        component.setLock(true)
+    end
+end
+
+--[[----------------------------------------------------------------------------
+Functions related to setup and game start
+--]]
+
+function increaseSeatedPlayersNumber(player, race)
+    --[[
+    This function tracks the number of players, who have chosen their races.
+    After 2nd player choses their race, creates the button to start game.
+    After 4th player choses their race, starts the game automatically.
+    ]]
+    _G.seated_players[player] = race
+    _G.seated_players_number = seated_players_number + 1
+
+    if seated_players_number > 1 then
+        getObjectFromGUID(START_GAME_BUTTON).call("create_start_game_button")
+    end
+    if seated_players_number > 3 then
+        destroyObject(getObjectFromGUID(START_GAME_BUTTON))
+        startGame()
+    end
+end
+
+function setupRace(params)
+    --[[
+    Destroys setup buttons for the chosen race and player,
+    then sets up race camponents in front of the given player,
+    and increases the number of seated players.
+    ]]
+    local race, player
+        = params[1], params[2]
+
+    -- destroy all race's setup buttons
+    for _, dict in pairs(PLAYERS_SETUP) do
+        destroyObjectIfExists(dict.buttons[race])
+    end
+    -- destroy all player's setup buttons
+    for _, guid in pairs(PLAYERS_SETUP[player].buttons) do
+        destroyObjectIfExists(guid)
+    end
+
+    -- calculate target position and rotation
+    local components_guids = RACES_GUIDS[race]
+    local setup_position = Vector(SETUP_LOCATION):scale(
+        Vector(PLAYERS_SETUP[player].location_sign)
+    )
+    local sign = PLAYERS_SETUP[player].rotation_sign
+    local setup_rotation = Vector(SETUP_ROTATION) * PLAYERS_SETUP[player].rotation_sign
+
+    -- place race components in front of player
+    placeComponent(
+        components_guids.infantry,
+        setup_rotation,
+        Vector(setup_position):add(Vector(3 * sign, 0, -3)),
+        true
+    )
+    placeComponent(
+        components_guids.cavalry,
+        setup_rotation,
+        Vector(setup_position):add(Vector(3 * sign, 0, -1)),
+        true
+    )
+    placeComponent(
+        components_guids.artillery,
+        setup_rotation,
+        Vector(setup_position):add(Vector(3 * sign, 0, 1)),
+        true
+    )
+    placeComponent(
+        components_guids.banner,
+        setup_rotation,
+        Vector(setup_position):add(Vector(3 * sign, 0, 3)),
+        true
+    )
+    placeComponent(
+        components_guids.card,
+        Vector(setup_rotation):add(Vector(0, 180, 0)),
+        Vector(setup_position):add(Vector(-1 * sign, 0, 0)),
+        true
+    )
+    -- increase number of seated players
+    increaseSeatedPlayersNumber(player, race)
+end
+
+function dealInitialResources(player)
+    -- deals a fixed amount of resources to every seated player
+    local position = Vector(SETUP_LOCATION):scale(
+        Vector(PLAYERS_SETUP[player].location_sign)
+    ):add(
+        Vector(-2, 0, 6):scale(
+            Vector(PLAYERS_SETUP[player].location_sign)
+        )
+    )
+    for resource, amount in pairs(INITIAL_RESOURCES) do
+        local resource_deck = getObjectFromGUID(RESOURCES[resource])
+        for i=1, 3 do
+            resource_deck.takeObject({position=position})
+        end
+
+        position:add(Vector(2, 0, 0):scale(
+            Vector(PLAYERS_SETUP[player].location_sign)
+        ))
+    end
+end
+
+function startGame()
+    --[[
+    Destroys all stuff that's no longer necessary:
+    setup buttons, help cards and race components.
+    Destroys or locks in place 3 players cover.
+    Deals initial resources and shuffles spell decks.
+    ]]
+    -- destroy any remaining setup buttons
+    for _, dict in pairs(PLAYERS_SETUP) do
+        for _, guid in pairs(dict.buttons) do
+            destroyObjectIfExists(guid)
+        end
+    end
+
+    -- destroy or lock 3 players cover, depending on players number
+    local three_players_cover = getObjectFromGUID(THREE_PLAYERS_COVER)
+    if seated_players_number == 3 then
+        three_players_cover.setPosition(THREE_PLAYERS_COVER_LOCATION)
+        three_players_cover.setLock(true)
+    else
+        destroyObject(three_players_cover)
+    end
+
+    -- destroy help cards of unseated players
+    for i=1, 4 do
+        if seated_players[i] == nil then
+            destroyObject(getObjectFromGUID(PLAYERS_SETUP[i].help_card))
+        end
+    end
+
+    -- destroy components of unchosen races
+    for race, _ in pairs(RACES_GUIDS) do
+        if not table.contains(seated_players, race) then
+            for _, guid in pairs(RACES_GUIDS[race]) do
+                destroyObjectIfExists(guid)
+            end
+        end
+    end
+
+    -- deal initial resources
+    for i, _ in pairs(seated_players) do
+        dealInitialResources(i)
+    end
+
+    -- shuffle all spell decks
+    for _, guid in pairs(SPELL_DECKS) do
+        getObjectFromGUID(guid).randomize()
+    end
+end

@@ -1,0 +1,6 @@
+function SetUpRace()
+    Global.call("setupRace", {
+        "humans",
+        4
+    })
+end

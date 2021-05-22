@@ -1,0 +1,11 @@
+<button
+    position="0 0 -200"
+    width="2000"
+    height="400"
+    fontSize="300"
+    onClick="SetUpRace()"
+    color="#b6c7dd"
+    textColor="#b46613ff"
+>
+    Krasnoludy
+</button>

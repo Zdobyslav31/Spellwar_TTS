@@ -1,0 +1,6 @@
+function SetUpRace()
+    Global.call("setupRace", {
+        "dwarfs",
+        2
+    })
+end

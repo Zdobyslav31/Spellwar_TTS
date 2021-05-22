@@ -1,0 +1,17 @@
+function create_start_game_button()
+    self.createButton({
+        click_function  = "startGame",
+        function_owner  = self,
+        position        = {0, 0.5, 0},
+        width           = 20000,
+        height          = 5000,
+        font_size       = 1000,
+        label           = "Czy wszyscy wybrali już swoje rasy?\nJeśli tak, kliknijcie ten przycisk...\ni zaczynajmy grę!",
+        tooltip         = "Kliknij ten przycisk gdy wszyscy gracze wybiorą swoje rasy"
+    })
+end
+
+function startGame()
+    Global.call("startGame")
+    destroyObject(self)
+end
